@@ -34,4 +34,9 @@ class PolicyTest {
         assertFalse(LicenseRules.allowed("Public domain", "", "true"))
         assertFalse(LicenseRules.allowed("CC BY", "https://evil.example/licenses/by/4.0", "false"))
     }
+    @Test fun rejectUrlsWithCredentialsOrNonHttpSchemes() {
+        assertEquals(LinkKind.INVALID, LinkRules.classify("https://user:pass@example.org/a.mp3"))
+        assertEquals(LinkKind.INVALID, LinkRules.classify("ftp://example.org/a.mp3"))
+        assertEquals(LinkKind.YOUTUBE, LinkRules.classify("https://www.youtube.com/watch?v=abc"))
+    }
 }
