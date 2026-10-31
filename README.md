@@ -29,4 +29,4 @@ Kotlin, Jetpack Compose, Android DownloadManager, Wikimedia Commons Action API, 
 Direct audio URLs must end with a supported audio extension (query parameters are allowed). Remote servers may redirect or reject downloads. Android DownloadManager tracks status and puts files in Music/OfflineBeats, but it does not verify copyright, file format, or the safety of arbitrary downloads. Only download files you trust and have rights to use. Commons licenses may impose attribution and ShareAlike conditions.
 
 ## Source license
-Apache-2.0 (see LICENSE). Individual audio files have their own licenses; downloading does not change their terms.
+MIT (see LICENSE). Individual audio files have their own licenses; downloading does not change their terms.
