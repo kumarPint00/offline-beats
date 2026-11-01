@@ -39,4 +39,9 @@ class PolicyTest {
         assertEquals(LinkKind.INVALID, LinkRules.classify("ftp://example.org/a.mp3"))
         assertEquals(LinkKind.YOUTUBE, LinkRules.classify("https://www.youtube.com/watch?v=abc"))
     }
+    @Test fun acceptedArchiveLicenses() {
+        assertTrue(LicenseRules.allowed("CC BY 4.0", "https://creativecommons.org/licenses/by/4.0/", "true"))
+        assertTrue(LicenseRules.allowed("CC BY-SA 4.0", "http://creativecommons.org/licenses/by-sa/4.0/", "true"))
+        assertFalse(LicenseRules.allowed("CC BY-ND 4.0", "https://creativecommons.org/licenses/by-nd/4.0/", "true"))
+    }
 }
