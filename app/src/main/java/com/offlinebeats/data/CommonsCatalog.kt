@@ -14,7 +14,8 @@ data class CommonsAudio(
     val sourceUrl: String,
     val mime: String,
     val license: String,
-    val licenseUrl: String
+    val licenseUrl: String,
+    val provider: String = "Wikimedia Commons"
 )
 
 class CommonsCatalog {
@@ -24,11 +25,11 @@ class CommonsCatalog {
         val query = URLEncoder.encode(q + " filetype:audio", "UTF-8")
         val api = "https://commons.wikimedia.org/w/api.php?action=query&format=json" +
             "&formatversion=2&generator=search&gsrsearch=" + query +
-            "&gsrnamespace=6&gsrlimit=30&prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iilimit=1"
+            "&gsrnamespace=6&gsrlimit=75&prop=imageinfo&iiprop=url%7Cmime%7Cextmetadata&iilimit=1"
         val conn = URL(api).openConnection() as HttpURLConnection
         conn.connectTimeout = 12000
         conn.readTimeout = 15000
-        conn.setRequestProperty("User-Agent", "OfflineBeats/0.2 (Android; https://github.com/kumarPint00/offline-beats)")
+        conn.setRequestProperty("User-Agent", "OfflineBeats/0.3 (Android; https://github.com/kumarPint00/offline-beats)")
         try {
             require(conn.responseCode in 200..299) { "Catalog HTTP " + conn.responseCode }
             val json = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
