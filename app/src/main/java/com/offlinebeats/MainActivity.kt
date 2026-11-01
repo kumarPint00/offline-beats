@@ -3,6 +3,8 @@ package com.offlinebeats
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.net.Uri
+import java.net.URLEncoder
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -20,6 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.offlinebeats.data.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -49,6 +53,7 @@ private fun OfflineBeatsScreen(incomingUrl: String) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val catalog = remember { CommonsCatalog() }
+    val archive = remember { ArchiveCatalog() }
     val downloads = remember { AudioDownloads(context) }
     var selected by rememberSaveable { mutableIntStateOf(0) }
     var search by rememberSaveable { mutableStateOf("") }
@@ -70,7 +75,8 @@ private fun OfflineBeatsScreen(incomingUrl: String) {
         surface = Color(0xFF232734),
         background = Color(0xFF11131B)
     )) {
-        Column(Modifier.fillMaxSize().background(Color(0xFF11131B))) {
+        Column(Modifier.fillMaxSize().background(Color(0xFF11131B))
+            .statusBarsPadding().navigationBarsPadding()) {
             Column(Modifier.padding(18.dp)) {
                 Text("OfflineBeats", style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold)
@@ -82,6 +88,7 @@ private fun OfflineBeatsScreen(incomingUrl: String) {
                 tabs.forEachIndexed { i, title ->
                     Tab(selected = selected == i, onClick = {
                         selected = i
+                        message = ""
                         if (i == 2) rows = downloads.history()
                     }, text = { Text(title) })
                 }
@@ -93,8 +100,8 @@ private fun OfflineBeatsScreen(incomingUrl: String) {
                 }
                 when (selected) {
                     0 -> {
-                        Text("Free-licensed catalog", style = MaterialTheme.typography.titleLarge)
-                        Text("Search Wikimedia Commons. Review each song's creator and license.",
+                        Text("Find downloadable music", style = MaterialTheme.typography.titleLarge)
+                        Text("Search Wikimedia Commons and Internet Archive for freely licensed audio.",
                             color = Color(0xFFB5BACB))
                         Spacer(Modifier.height(12.dp))
                         OutlinedTextField(value = search, onValueChange = { search = it },
@@ -106,8 +113,23 @@ private fun OfflineBeatsScreen(incomingUrl: String) {
                                 loading = true
                                 message = ""
                                 try {
-                                    found = withContext(Dispatchers.IO) { catalog.search(search) }
-                                    if (found.isEmpty()) message = "No downloadable results found."
+                                    val term = search.trim()
+                                    val foundResults = coroutineScope {
+                                        val commonsJob = async(Dispatchers.IO) { runCatching { catalog.search(term) } }
+                                        val archiveJob = async(Dispatchers.IO) { runCatching { archive.search(term) } }
+                                        val commonsResult = commonsJob.await()
+                                        val archiveResult = archiveJob.await()
+                                        if (commonsResult.isFailure && archiveResult.isFailure) {
+                                            throw IllegalStateException("Search providers unavailable. Check internet and retry.")
+                                        }
+                                        commonsResult.getOrDefault(emptyList()) + archiveResult.getOrDefault(emptyList())
+                                    }
+                                    found = foundResults
+                                    message = if (found.isEmpty()) {
+                                        "No verified free downloads for " + term + " in these catalogs. Commercial songs may only be available on official music services."
+                                    } else {
+                                        found.size.toString() + " audio results from Wikimedia Commons and Internet Archive."
+                                    }
                                 } catch (e: Exception) {
                                     message = e.message ?: "Search failed"
                                 } finally { loading = false }
@@ -115,16 +137,28 @@ private fun OfflineBeatsScreen(incomingUrl: String) {
                         }, enabled = !loading && search.trim().length >= 2) {
                             Text(if (loading) "Searching…" else "Search")
                         }
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedButton(onClick = { openArtistSearch(context, search) },
+                            enabled = search.trim().isNotEmpty()) {
+                            Text("Find official artist / download pages online")
+                        }
+                        Text("Opens a web search; results are not automatically downloadable.",
+                            color = Color(0xFFB5BACB), style = MaterialTheme.typography.bodySmall)
                         Spacer(Modifier.height(10.dp))
                         found.forEach { song ->
                             ElevatedCard(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
                                 Column(Modifier.padding(14.dp)) {
                                     Text(song.name, fontWeight = FontWeight.SemiBold)
                                     Text(song.creator, color = Color(0xFFBEC7D9))
-                                    Text(song.license, color = Color(0xFF9EDCFF))
+                                    Text(song.provider + " • " + song.license, color = Color(0xFF9EDCFF))
+                                    if (song.provider == "Internet Archive") {
+                                        Text("License declared by uploader. Review source before downloading.",
+                                            color = Color(0xFFBEC7D9),
+                                            style = MaterialTheme.typography.bodySmall)
+                                    }
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         TextButton(onClick = { openWeb(context, song.sourceUrl) }) {
-                                            Text("Source / license")
+                                            Text("Review source")
                                         }
                                         Button(onClick = {
                                             try {
@@ -231,7 +265,7 @@ private fun OfflineBeatsScreen(incomingUrl: String) {
                     }
                 }
                 Spacer(Modifier.height(22.dp))
-                Text("No ads • No account • No music player • No stream-ripping",
+                Text("No ads • No account • Samsung Music compatible",
                     color = Color(0xFF9AA5B7))
             }
         }
@@ -243,4 +277,13 @@ private fun openWeb(context: Context, raw: String) {
         LinkRules.classify(raw) == LinkKind.EMPTY) return
     try { context.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse(raw))) }
     catch (_: Exception) { /* No available browser; ignore safely. */ }
+}
+
+private fun openArtistSearch(context: Context, artistOrSong: String) {
+    val query = artistOrSong.trim().take(80)
+    if (query.isBlank()) return
+    val terms = URLEncoder.encode(query + " official music download creator artist", "UTF-8")
+    val url = "https://www.google.com/search?q=" + terms
+    try { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+    catch (_: Exception) { /* no installed browser */ }
 }
