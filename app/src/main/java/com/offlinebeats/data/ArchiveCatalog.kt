@@ -16,7 +16,7 @@ class ArchiveCatalog {
         // Quote as a literal phrase; avoid injecting advanced search operators.
         val literal = query.replace(Regex("[^\\p{L}\\p{N} _.-]"), " ").trim()
         if (literal.length < 2) return emptyList()
-        val expression = "mediatype:audio AND (title:(\\\"$literal\\\") OR creator:(\\\"$literal\\\"))"
+        val expression = "mediatype:audio AND (title:("$literal") OR creator:("$literal"))"
         val url = "https://archive.org/advancedsearch.php?q=" + encode(expression) +
             "&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=creator" +
             "&fl%5B%5D=licenseurl&rows=25&output=json"
