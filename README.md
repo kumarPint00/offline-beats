@@ -3,7 +3,9 @@
 Downloader-only Android app for users who already use Samsung Music or another offline music player.
 
 ## Features
-- Search Wikimedia Commons for audio with verified Public Domain, CC0, CC BY, or CC BY-SA metadata.
+- Search both Wikimedia Commons and Internet Archive for audio whose metadata declares Public Domain, CC0, CC BY, or CC BY-SA (uploader metadata is not an independent rights guarantee).
+- Find official artist/download pages using a web-search link when catalog results are empty. The app does not scrape or promise downloads from those pages.
+- Proper screen insets on modern Samsung / Android 15+ phones.
 - Download direct HTTPS links to MP3, M4A, AAC, FLAC, OGG, OPUS, or WAV files **when you have permission**.
 - Receive links through Android's Share menu.
 - Save downloaded files to the public **Music/OfflineBeats** folder for Samsung Music or other music apps.
@@ -23,7 +25,10 @@ YouTube or YouTube Music audio ripping, Spotify and other protected streaming se
 No paid CI or server is necessary for this starter. The debug APK is not a Play Store production release. For release distribution, sign the APK with your own signing key.
 
 ## Stack
-Kotlin, Jetpack Compose, Android DownloadManager, Wikimedia Commons Action API, local SharedPreferences download history; JDK 17, Android SDK 35, Gradle 8.11.1, Android Gradle Plugin 8.9.2.
+Kotlin, Jetpack Compose, Android DownloadManager, Wikimedia Commons Action API, Internet Archive search/metadata API, local SharedPreferences download history; JDK 17, Android SDK 35, Gradle 8.11.1, Android Gradle Plugin 8.9.2.
+
+## What this does not solve
+Searching for commercial artists like Honey Singh will not normally find authorized free audio downloads in public-domain/Creative-Commons catalogs. The artist-search link opens public web results for the user's own review, not a downloadable audio file. YouTube Premium downloads remain inside YouTube and cannot be exported as MP3 for Samsung Music.
 
 ## Known limitations
 Direct audio URLs must end with a supported audio extension (query parameters are allowed). Remote servers may redirect or reject downloads. Android DownloadManager tracks status and puts files in Music/OfflineBeats, but it does not verify copyright, file format, or the safety of arbitrary downloads. Only download files you trust and have rights to use. Commons licenses may impose attribution and ShareAlike conditions.
