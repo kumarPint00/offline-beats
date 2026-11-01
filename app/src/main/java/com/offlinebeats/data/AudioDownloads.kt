@@ -38,11 +38,14 @@ class AudioDownloads(private val context: Context) {
     fun saveCommons(track: CommonsAudio): Long {
         require(LicenseRules.allowed(track.license, track.licenseUrl, "true") ||
             LicenseRules.allowed(track.license, track.licenseUrl, "false")) {
-            "Source does not have a verified free license"
+            "This file is not marked with an accepted free license"
         }
         val uri = URI(track.mediaUrl)
-        require(uri.scheme == "https" && uri.host == "upload.wikimedia.org") {
-            "Invalid Commons download host"
+        val commonsHost = uri.host == "upload.wikimedia.org" && track.provider == "Wikimedia Commons"
+        val archiveHost = uri.host == "archive.org" &&
+            uri.path.startsWith("/download/") && track.provider == "Internet Archive"
+        require(uri.scheme == "https" && (commonsHost || archiveHost)) {
+            "Unsupported audio provider or download host"
         }
         val extension = uri.path.substringAfterLast('.', "ogg").take(6)
         require(extension.lowercase() in setOf("mp3", "m4a", "aac", "flac", "ogg", "opus", "wav")) {
